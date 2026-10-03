@@ -1,0 +1,55 @@
+name: Update magpie
+
+on:
+  schedule:
+    - cron: "17 19 * * *"  # 03:17 Beijing time, daily
+  workflow_dispatch:
+
+concurrency:
+  group: update-magpie
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: ./.github/actions/setup
+        with:
+          cachix-auth-token: ${{ secrets.CACHIX_AUTH_TOKEN }}
+
+      # --check compares version and rev only: no nix, no download, so a day
+      # with no new tag costs nothing.
+      - name: Check for a new tag
+        id: check
+        run: |
+          if ./update.py --check; then
+            echo "drift=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "drift=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Bump version, rev and hashes
+        if: steps.check.outputs.drift == 'true'
+        run: ./update.py
+
+      # Built before it is pushed, so a tag that does not compile stops in CI
+      # instead of landing on main.
+      - name: Build
+        if: steps.check.outputs.drift == 'true'
+        run: nix build .#magpie --accept-flake-config -L
+
+      - name: Commit and push
+        if: steps.check.outputs.drift == 'true'
+        run: |
+          version=$(grep -m1 'version = ' package.nix | cut -d'"' -f2)
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add package.nix
+          git commit -m "chore: update magpie to ${version}"
+          git pull --rebase origin main
+          git push origin main

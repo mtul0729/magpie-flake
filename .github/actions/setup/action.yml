@@ -1,0 +1,23 @@
+name: Set up Nix build environment
+description: Installs Nix and the cachix daemon; every store path built
+  afterwards is pushed to the mtul cache automatically (build-time deps
+  included) — no explicit push step anywhere.
+inputs:
+  cachix-auth-token:
+    description: CACHIX auth token; cache push is skipped when empty.
+    required: false
+    default: ""
+runs:
+  using: composite
+  steps:
+    - uses: cachix/install-nix-action@v31
+      with:
+        extra_nix_config: |
+          access-tokens = github.com=${{ github.token }}
+
+    - uses: cachix/cachix-action@v17
+      if: inputs.cachix-auth-token != ''
+      with:
+        name: mtul
+        authToken: ${{ inputs.cachix-auth-token }}
+        useDaemon: true
