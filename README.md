@@ -65,7 +65,9 @@ advertises it, so `nix build --accept-flake-config` picks it up.
 
 It reads tags with `git ls-remote` (no token, no API pagination) and gets both
 hashes from nix itself: `nix flake prefetch` for the tarball, and a real
-`go mod vendor` run with `lib.fakeHash` for the vendor hash.
+`go mod vendor` run with `lib.fakeHash` for the vendor hash. The vendor step
+uses the default `proxy.golang.org`; on a network that resets large downloads
+mid-transfer it may need a re-run (the script retries).
 
 ## Auto-update workflows
 

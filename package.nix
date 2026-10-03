@@ -74,16 +74,6 @@ buildGoModule rec {
 
   vendorHash = "sha256-XEaHZVw3co0yUV6fLUlSkvg9LlroKFj2B2sjMW1e6BU=";
 
-  # go mod vendor 拉大 zip 时连接会被中途重置（unexpected EOF），换国内镜像。
-  # 镜像仍可能把 zip 请求送回上游，所以这不保证一次成功——重跑通常就好，
-  # ./update.py 里对这一步做了重试。go.sum 已有全部依赖，GOSUMDB 不参与校验。
-  # 换镜像的原因是打包机所在的网络，不是上游要求：能直连 proxy.golang.org 的
-  # 环境可以去掉这一整段 overrideModAttrs。
-  overrideModAttrs = _: {
-    GOPROXY = "https://goproxy.cn";
-    GOSUMDB = "off";
-  };
-
   # production 只是 Makefile 里的惯例 tag，源码里没有任何 //go:build production，
   # 带上它是为了和上游发布产物保持一致。不加 gtk3，见文件头。
   tags = [ "production" ];
