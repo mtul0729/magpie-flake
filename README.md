@@ -12,9 +12,14 @@ One thing is patched: magpie writes its own `~/.local/share/applications/
 magpie.desktop` with `Exec` set to `os.Executable()`, i.e. a `/nix/store`
 path. XDG prefers the user directory over the system one, so after any update
 the launcher would keep starting the old, still-present store path — and that
-old version rewrites the same path, so it never recovers. The patch makes
-`Exec` a plain `magpie` (PATH lookup), and the build fails if the upstream code
-moves.
+old version rewrites the same path, so it never recovers. The patch disables
+that write entirely (`no-self-desktop-file.patch`); the only desktop file is
+the one this package installs, with `Exec=magpie`.
+
+The generated file also ran `xdg-mime default` to make itself the default
+handler for `magpie://`, writing to the user's `mimeapps.list`. Declaring the
+type is fine and this package keeps `MimeType=x-scheme-handler/magpie`, but
+choosing the default application for the user is not, so it is not replaced.
 
 Upstream cuts a tag every few commits, so this flake tracks the newest tag
 rather than a release.

@@ -28,9 +28,11 @@
 # （internal/gui/scheme_linux.go），XDG 用户目录优先于系统目录，于是每次升版
 # 后启动器拉起的还是旧 store 路径上的旧版本，而旧版本启动后又把自己写回去——
 # 自锁。所以这里直接关掉它写文件的行为（no-self-desktop-file.patch），桌面文件
-# 只留我们这份：Exec 是 PATH 上的 magpie，另外补上 MimeType 接管 magpie:// 链接。
-# 还差的一环是 xdg-mime default 写进 mimeapps.list 的"默认应用"，包做不到（不能
-# 碰用户配置），用 NixOS / home-manager 的 xdg.mimeApps.defaultApplications 补上。
+# 只留我们这份，Exec 是 PATH 上的 magpie。
+#
+# 它那份文件还顺带干了第二件事：跑 `xdg-mime default` 把自己登记成 magpie://
+# 的默认应用，写进用户的 mimeapps.list。声明类型是合理的（包里这份保留
+# MimeType），但替用户决定默认应用不是——刻意不补这一环。
 {
   lib,
   buildGoModule,
@@ -54,8 +56,8 @@ let
     ];
     startupWMClass = "magpie";
     terminal = false;
-    # 接管 magpie:// 导入链接：这份是系统里唯一一份，Exec 走 PATH、不随版本变。
-    # 它自己那份被 no-self-desktop-file.patch 关掉了。
+    # 声明 magpie:// ：只是"我能处理这个类型"，是合理的。不做的是把它设成
+    # 默认应用——那是它原来用 `xdg-mime default` 写用户 mimeapps.list 干的，见文件头。
     mimeTypes = [ "x-scheme-handler/magpie" ];
   };
 in
