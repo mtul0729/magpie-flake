@@ -56,8 +56,11 @@ hashes from nix itself: `nix flake prefetch` for the tarball, and a real
 
 ## Auto-update workflows
 
-- `.github/workflows/update-package.yml` — daily: `--check`, bump, build, then
-  push to `main`. The build runs before the push, so a broken tag stops in CI.
+- `.github/workflows/update-package.yml` — hourly: `--check`, bump, build, then
+  push to `main`. `--check` is a `git ls-remote` with no nix involved, so a
+  hour without a new tag costs nothing; upstream tags several times a day. The
+  build runs before the push, so a broken tag stops in CI instead of landing on
+  `main`.
 - `.github/workflows/update-flake-lock.yml` — weekly: `nix flake update`, build,
   push `flake.lock`.
 - `.github/workflows/build.yml` — build on every push and PR.
