@@ -8,6 +8,14 @@ drops an FHS binary that cannot run on NixOS. Here it is a `buildGoModule`
 package on GTK 4 / WebKitGTK 6, which is what Wails v3 uses on Linux (the
 Makefile's `gtk3` tag exists for old distros and is deliberately not used).
 
+One thing is patched: magpie writes its own `~/.local/share/applications/
+magpie.desktop` with `Exec` set to `os.Executable()`, i.e. a `/nix/store`
+path. XDG prefers the user directory over the system one, so after any update
+the launcher would keep starting the old, still-present store path — and that
+old version rewrites the same path, so it never recovers. The patch makes
+`Exec` a plain `magpie` (PATH lookup), and the build fails if the upstream code
+moves.
+
 Upstream cuts a tag every few commits, so this flake tracks the newest tag
 rather than a release.
 

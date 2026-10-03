@@ -22,6 +22,12 @@
 # 上游 Linux 只给一个裸二进制，没有 .desktop（只有 macOS 的 Info.plist 和
 # Windows 的 winres），桌面文件由安装器或首次运行时写。包里这份是给启动器先
 # 备上的，图标取 build/windows 里的 256px PNG。
+#
+# 但光有系统目录那份不够：magpie 自己往 ~/.local/share/applications/
+# magpie.desktop 写的那份用 os.Executable() 把 Exec 钉成了 store 绝对路径
+# （internal/gui/scheme_linux.go），XDG 用户目录优先于系统目录，于是每次升版
+# 后启动器拉起的还是旧 store 路径上的旧版本，而旧版本启动后又把自己写回去——
+# 自锁。postPatch 里把它改成 PATH 上的 magpie，Exec 不再随版本变。
 {
   lib,
   buildGoModule,
@@ -73,6 +79,28 @@ buildGoModule rec {
   # production 只是 Makefile 里的惯例 tag，源码里没有任何 //go:build production，
   # 带上它是为了和上游发布产物保持一致。不加 gtk3，见文件头。
   tags = [ "production" ];
+
+  postPatch = ''
+    # 见文件头：把自写的 desktop 文件的 Exec 从 store 绝对路径改成 PATH 上的
+    # magpie。三处一起改——Exec 行、幂等判断（内容是字符串比较，不是正则），
+    # 以及 os.Executable() 这 4 行（留着会让 exe 变成未使用变量，Go 直接报错）。
+    sed -i \
+      -e 's|Exec=` + exe + ` %u|Exec=magpie %u|' \
+      -e 's|"Exec="+exe+" %u"|"Exec=magpie %u"|' \
+      internal/gui/scheme_linux.go
+    sed -i '/exe, err := os.Executable()/,+3d' internal/gui/scheme_linux.go
+
+    # 上游挪走或重写了这段代码，就让它构建失败，不要静默退回钉死绝对路径：
+    # substituteInPlace 的 --replace 只打 WARNING 不失败，所以这里自己断言。
+    if grep -q 'os.Executable' internal/gui/scheme_linux.go; then
+      echo "patch 失效：os.Executable() 还在 internal/gui/scheme_linux.go" >&2
+      exit 1
+    fi
+    if ! grep -q 'Exec=magpie %u' internal/gui/scheme_linux.go; then
+      echo "patch 失效：Exec= 那行没改成 magpie" >&2
+      exit 1
+    fi
+  '';
 
   ldflags = [
     "-s"
