@@ -24,8 +24,16 @@
   好几个，所以更新频率定的是每小时。
 - **四个字段一起动**：`version`、`rev`、`src hash`、`vendorHash`。只有
   `./update.py` 可以改，CI 也是调它；不要手改其中一两个。
-- **不用 nix-update。** magpie 的 `rev` 是 tag 指向的裸 commit sha、不含版本号，
-  nix-update 对 `fetchFromGitHub + rev + vendorHash` 会改写成什么没验证过，别试。
+- **不用 nix-update**（1.16.0 实测源码），两个具体原因：
+  1. 上游只打 tag、不发 release（`gh release list --repo yetone/magpie` 是空的），
+     而 nix-update 只认 release：默认读 `releases.atom`
+     （`version/github.py:141`，旁边还留着 `# TODO fallback to tags?`），
+     `--use-github-releases` 也只是换成 `/releases` API，没有读 tag 的开关。
+  2. 就算有 release，它也不会动 `rev`：`update.py:44-49` 只在
+     `new_version.rev` 非空时替换 rev 行，而那个字段只有 branch/snapshot 模式才
+     有值（`github.py:215`）。走 tag 时只把版本号换了，`rev` 仍指向旧 commit，
+     prefetch 拿到的 hash 也和旧的一样——"更新成功"但源码没变，是静默错误。
+  它处理 `vendorHash` 那部分本身没问题，别把这两件事混为一谈。
 - **补丁用 patch 文件，不用 sed。** `patchPhase` 是 `patch -p1`
   （`pkgs/stdenv/generic/setup.sh:1385`）配 `set -e` + `pipefail`，打不上就是构建
   失败；sed 匹配不到退出码仍是 0，`substituteInPlace --replace` 也只打 WARNING
