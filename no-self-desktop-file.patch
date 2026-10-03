@@ -1,0 +1,17 @@
+--- a/internal/gui/scheme_linux.go
++++ b/internal/gui/scheme_linux.go
+@@ -12,6 +12,14 @@
+ // entry that claims the scheme, then the desktop's default for it. An
+ // entry that already runs this executable and claims it is left alone.
+ func registerScheme() error {
++	// Disabled downstream (magpie-flake: no-self-desktop-file.patch): magpie
++	// must not write ~/.local/share/applications/magpie.desktop itself, because
++	// it pins Exec to os.Executable() -- a per-version /nix/store path -- and the
++	// XDG user directory wins over the system one, so the launcher would keep
++	// starting whichever version happened to write it first.
++	// The rest of the function is unreachable; it is kept only so its imports
++	// stay used (Go fails the build on an unused import).
++	return nil
+ 	exe, err := os.Executable()
+ 	if err != nil {
+ 		return err

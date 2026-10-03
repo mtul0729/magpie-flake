@@ -27,7 +27,10 @@
 # magpie.desktop 写的那份用 os.Executable() 把 Exec 钉成了 store 绝对路径
 # （internal/gui/scheme_linux.go），XDG 用户目录优先于系统目录，于是每次升版
 # 后启动器拉起的还是旧 store 路径上的旧版本，而旧版本启动后又把自己写回去——
-# 自锁。postPatch 里把它改成 PATH 上的 magpie，Exec 不再随版本变。
+# 自锁。所以这里直接关掉它写文件的行为（no-self-desktop-file.patch），桌面文件
+# 只留我们这份：Exec 是 PATH 上的 magpie，另外补上 MimeType 接管 magpie:// 链接。
+# 还差的一环是 xdg-mime default 写进 mimeapps.list 的"默认应用"，包做不到（不能
+# 碰用户配置），用 NixOS / home-manager 的 xdg.mimeApps.defaultApplications 补上。
 {
   lib,
   buildGoModule,
@@ -51,6 +54,9 @@ let
     ];
     startupWMClass = "magpie";
     terminal = false;
+    # 接管 magpie:// 导入链接：这份是系统里唯一一份，Exec 走 PATH、不随版本变。
+    # 它自己那份被 no-self-desktop-file.patch 关掉了。
+    mimeTypes = [ "x-scheme-handler/magpie" ];
   };
 in
 buildGoModule rec {
@@ -80,27 +86,10 @@ buildGoModule rec {
   # 带上它是为了和上游发布产物保持一致。不加 gtk3，见文件头。
   tags = [ "production" ];
 
-  postPatch = ''
-    # 见文件头：把自写的 desktop 文件的 Exec 从 store 绝对路径改成 PATH 上的
-    # magpie。三处一起改——Exec 行、幂等判断（内容是字符串比较，不是正则），
-    # 以及 os.Executable() 这 4 行（留着会让 exe 变成未使用变量，Go 直接报错）。
-    sed -i \
-      -e 's|Exec=` + exe + ` %u|Exec=magpie %u|' \
-      -e 's|"Exec="+exe+" %u"|"Exec=magpie %u"|' \
-      internal/gui/scheme_linux.go
-    sed -i '/exe, err := os.Executable()/,+3d' internal/gui/scheme_linux.go
-
-    # 上游挪走或重写了这段代码，就让它构建失败，不要静默退回钉死绝对路径：
-    # substituteInPlace 的 --replace 只打 WARNING 不失败，所以这里自己断言。
-    if grep -q 'os.Executable' internal/gui/scheme_linux.go; then
-      echo "patch 失效：os.Executable() 还在 internal/gui/scheme_linux.go" >&2
-      exit 1
-    fi
-    if ! grep -q 'Exec=magpie %u' internal/gui/scheme_linux.go; then
-      echo "patch 失效：Exec= 那行没改成 magpie" >&2
-      exit 1
-    fi
-  '';
+  # 关掉 magpie 自己写 ~/.local/share/applications/magpie.desktop 的行为，理由见
+  # 文件头；桌面文件和 magpie:// 的注册由下面这份接管。用 patch 文件而不是 sed：
+  # 上游一改这段代码，patch 打不上就是构建失败，不会静默退回原行为。
+  patches = [ ./no-self-desktop-file.patch ];
 
   ldflags = [
     "-s"
