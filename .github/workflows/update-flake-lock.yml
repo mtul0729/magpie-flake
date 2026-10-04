@@ -2,9 +2,9 @@ name: Update flake.lock
 
 on:
   schedule:
-    # Mondays at 03:30 Beijing time; off the package workflow's minute so the
+    # Daily at 03:30 Beijing time; off the package workflow's minute so the
     # two never race on the same push.
-    - cron: "30 19 * * 1"
+    - cron: "30 19 * * *"
   workflow_dispatch:
 
 concurrency:

@@ -76,7 +76,7 @@ mid-transfer it may need a re-run (the script retries).
   hour without a new tag costs nothing; upstream tags several times a day. The
   build runs before the push, so a broken tag stops in CI instead of landing on
   `main`.
-- `.github/workflows/update-flake-lock.yml` — weekly: `nix flake update`, build,
+- `.github/workflows/update-flake-lock.yml` — daily: `nix flake update`, build,
   push `flake.lock`.
 - `.github/workflows/build.yml` — build on every push and PR.
 

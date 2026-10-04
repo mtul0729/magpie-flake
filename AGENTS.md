@@ -2,7 +2,7 @@
 
 把 [yetone/magpie](https://github.com/yetone/magpie) 打成独立 Nix 包的 flake：
 源码构建（`buildGoModule` + GTK 4 / WebKitGTK 6），跟上游最新 tag，GitHub Actions
-每小时查一次新版、每周刷一次 `flake.lock`，构建产物进 `mtul` cachix。
+每小时查一次新版、每天刷一次 `flake.lock`，构建产物进 `mtul` cachix。
 
 理由类的东西不写在这里，见 [`docs/`](docs/README.md)。
 
@@ -19,7 +19,7 @@
 - `update.py` — 唯一能改版本和 hash 的入口，CLI 契约与不变式写在其 docstring 里。
 - `.github/actions/setup/action.yml` — 装 nix + cachix daemon（复合 action）。
 - `.github/workflows/` — `update-package.yml`（每小时）、`update-flake-lock.yml`
-  （每周）、`build.yml`（push/PR）。
+  （每天）、`build.yml`（push/PR）。
 
 ## 约定
 
