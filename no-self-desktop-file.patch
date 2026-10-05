@@ -1,6 +1,8 @@
+diff --git a/internal/gui/scheme_linux.go b/internal/gui/scheme_linux.go
+index 4d79e8f..5339748 100644
 --- a/internal/gui/scheme_linux.go
 +++ b/internal/gui/scheme_linux.go
-@@ -12,6 +12,14 @@
+@@ -13,6 +13,14 @@ import (
  // entry that claims the scheme, then the desktop's default for it. An
  // entry that already runs this executable and claims it is left alone.
  func registerScheme() error {
@@ -12,6 +14,6 @@
 +	// The rest of the function is unreachable; it is kept only so its imports
 +	// stay used (Go fails the build on an unused import).
 +	return nil
- 	exe, err := os.Executable()
- 	if err != nil {
- 		return err
+ 	// The package supplies the host entry; this executable is inside the sandbox.
+ 	if os.Getenv("FLATPAK_ID") != "" {
+ 		return nil

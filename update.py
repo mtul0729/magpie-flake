@@ -70,6 +70,8 @@ VERSION_RE = re.compile(r"v?[0-9][0-9A-Za-z.+_-]*")
 # peeled `^{}` line being the commit rather than the tag object.
 LS_REMOTE_RE = re.compile(r"^([0-9a-f]{40})\trefs/tags/(\S+)$", re.MULTILINE)
 GOT_HASH_RE = re.compile(r"got:\s+(sha256-[A-Za-z0-9+/=]+)")
+# nix's patchPhase prints this when a patch hunk no longer matches the source.
+PATCH_FAIL_RE = re.compile(r"Hunk #\d+ FAILED")
 
 NIX_EXTRA = ["--extra-experimental-features", "nix-command flakes"]
 GIT_TIMEOUT = 60
@@ -82,6 +84,10 @@ FETCH_ATTEMPTS = 3
 
 class UpdateError(Exception):
     """A failure that must abort before package.nix is touched."""
+
+
+class NotRetryable(UpdateError):
+    """A failure a retry can only repeat, e.g. a patch that no longer applies."""
 
 
 @dataclass(frozen=True)
@@ -170,6 +176,8 @@ def retry(label: str, action: Callable[[], str]) -> str:
     for attempt in range(1, FETCH_ATTEMPTS + 1):
         try:
             return action()
+        except NotRetryable:
+            raise
         except UpdateError as err:
             last = str(err)
             print(f"note: {label} failed (attempt {attempt}/{FETCH_ATTEMPTS})", file=sys.stderr)
@@ -198,6 +206,11 @@ def prefetch_vendor(rev: str, src_hash: str) -> str:
     Retried because the module downloads get reset mid-transfer here: the error
     is `unexpected EOF` on some .zip, never a wrong hash.  A retry re-runs the
     whole fetch, which is why this is the slowest step of the script.
+
+    The probe can also fail before vendoring starts: a source patch that no
+    longer applies dies in patchPhase.  That is permanent, so it is raised as
+    NotRetryable and named for what it is instead of being retried (and, worse,
+    reported) as a `go mod vendor` failure.
     """
 
     def once() -> str:
@@ -217,6 +230,16 @@ def prefetch_vendor(rev: str, src_hash: str) -> str:
             raise UpdateError("built with a fake vendorHash, so nix printed no hash")
         match = GOT_HASH_RE.search(result.stderr)
         if not match:
+            patch_failure = [
+                line.strip()
+                for line in result.stderr.splitlines()
+                if "applying patch" in line or PATCH_FAIL_RE.search(line)
+            ]
+            if patch_failure:
+                raise NotRetryable(
+                    "a source patch no longer applies; regenerate it -- nix said: "
+                    + " | ".join(patch_failure)
+                )
             raise UpdateError(result.stderr.strip().splitlines()[-1] or "no output")
         return match.group(1)
 
