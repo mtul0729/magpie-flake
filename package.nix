@@ -63,16 +63,16 @@ let
 in
 buildGoModule rec {
   pname = "magpie";
-  version = "0.1.1005";
+  version = "0.1.1012";
 
   src = fetchFromGitHub {
     owner = "yetone";
     repo = "magpie";
-    rev = "1534382ff922053093f13a9c1ebcadfc78fe3f05";
-    hash = "sha256-7gA4C2LI6qTxf0YgsAPkstSsAHGaqQlJVJeqWLzPt5I=";
+    rev = "eebd0b4222ed0d206de06395da0811a946303d57";
+    hash = "sha256-Omhf53smJ+YzVu0ehmGz8N2mvkbe2IiSJins+2EZXCM=";
   };
 
-  vendorHash = "sha256-XEaHZVw3co0yUV6fLUlSkvg9LlroKFj2B2sjMW1e6BU=";
+  vendorHash = "sha256-dqFc8UTREaRFt3G3DS7IllBx8ysOlcA5JUqGaQ/XlcI=";
 
   # production 只是 Makefile 里的惯例 tag，源码里没有任何 //go:build production，
   # 带上它是为了和上游发布产物保持一致。不加 gtk3，见文件头。
