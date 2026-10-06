@@ -2,9 +2,13 @@ name: Update flake.lock
 
 on:
   schedule:
-    # Daily at 03:30 Beijing time; off the package workflow's minute so the
-    # two never race on the same push.
-    - cron: "30 19 * * *"
+    # Daily at 02:43 UTC: GitHub-hosted-runner off-peak (US deep night, EU
+    # pre-dawn).  The previous 19:30 UTC slot sat in the US-afternoon peak,
+    # and on 2026-10-05 the job burned its whole 15-minute acquisition budget
+    # without ever getting a runner.  Minute 43 stays off the package
+    # workflow's :17 (so the two never race on the same push) and off the
+    # :00/:30 minutes where scheduled jobs pile up.
+    - cron: "43 2 * * *"
   workflow_dispatch:
 
 concurrency:
