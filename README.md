@@ -48,6 +48,11 @@ nixpkgs.overlays = [ inputs.magpie-flake.overlays.default ]; # provides pkgs.mag
 Follow your own nixpkgs: without `follows`, gtk4 and webkitgtk come from this
 flake's own nixpkgs pin and you download a second toolchain for no reason.
 
+The package includes Bun for installing and running plugins; no separate Bun
+installation is needed. The launcher defaults `MAGPIE_BUN` to nixpkgs' Bun,
+bypassing upstream's runtime download and auto-update. Set `MAGPIE_BUN` explicitly
+to use a different Bun executable.
+
 Builds are pushed to the `mtul` cachix cache; `flake.nix`'s `nixConfig` already
 advertises it, so `nix build --accept-flake-config` picks it up.
 
