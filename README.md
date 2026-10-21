@@ -69,6 +69,11 @@ Do not symlink the entry by hand: a hand-made link usually points at
 generation is replaced (or its store path collected) the link breaks silently —
 magpie just stops starting at login.
 
+The package includes Bun for installing and running plugins; no separate Bun
+installation is needed. The launcher defaults `MAGPIE_BUN` to nixpkgs' Bun,
+bypassing upstream's runtime download and auto-update. Set `MAGPIE_BUN` explicitly
+to use a different Bun executable.
+
 Builds are pushed to the `mtul` cachix cache; `flake.nix`'s `nixConfig` already
 advertises it, so `nix build --accept-flake-config` picks it up.
 

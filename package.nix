@@ -36,8 +36,10 @@
 {
   lib,
   buildGoModule,
+  bun,
   fetchFromGitHub,
   makeDesktopItem,
+  makeWrapper,
   pkg-config,
   gtk4,
   webkitgtk_6_0,
@@ -95,6 +97,7 @@ buildGoModule rec {
   ];
 
   nativeBuildInputs = [
+    makeWrapper
     pkg-config
   ];
 
@@ -107,6 +110,11 @@ buildGoModule rec {
     install -Dm644 build/windows/icon-256.png $out/share/icons/hicolor/256x256/apps/magpie.png
     install -Dm644 ${desktopItem}/share/applications/magpie.desktop \
       $out/share/applications/magpie.desktop
+  '';
+
+  postFixup = ''
+    wrapProgram $out/bin/magpie \
+      --set-default MAGPIE_BUN ${lib.getExe bun}
   '';
 
   # 上游 release/CI 已验证过这个 tag，包层不重复跑完整测试。
